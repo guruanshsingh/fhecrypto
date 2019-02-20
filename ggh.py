@@ -103,9 +103,6 @@ def ggh_crack(public_basis, encrypted_message):
     # Find a good basis for the lattice
     good_basis = lll_lattice_reduction(public_basis)
     
-    print('public_basis:', public_basis)
-    print('good_basis:', good_basis)
-    
     # Decrypt using the good basis as if it's the private basis
     return ggh_decrypt(good_basis, public_basis, encrypted_message)
 

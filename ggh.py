@@ -1,6 +1,7 @@
 # Script Implementing the GGH Cryptosystem
 # Reference: An Introduction to Mathematical Cryptography - Hoffstein, Pipher, Silverman
 
+import sympy
 from lattice import *
 
 
@@ -74,7 +75,7 @@ def ggh_encrypt(public_basis, message, *, delta=None, rand=None):
 
 
 
-def ggh_decrypt(private_basis, public_basis, message):
+def ggh_decrypt(private_basis, public_basis, encrypted_message):
     """
     Returns a decrypted message using the GGH encryption algorithm.
     
@@ -85,10 +86,28 @@ def ggh_decrypt(private_basis, public_basis, message):
     """
     
     # Find the lattice vector v closest to the vector of the encrypted message
-    v = private_basis.mat() * (private_basis.inv() * message).applyfunc(round)
+    v = private_basis.mat() * (private_basis.inv() * encrypted_message).applyfunc(round)
     
     # Express v as a linear combination of public basis, revealing the original message
     return (public_basis.inv() * v).applyfunc(round)
+
+
+
+def ggh_crack(public_basis, encrypted_message):
+    """
+    Returns a decrypted message by attempting to generate a good basis using the
+    LLL algorithm. If the basis returned by LLL is not sufficiently small or
+    orthogonal, then the decrypted message is likely to be incorrect.
+    """
+    
+    # Find a good basis for the lattice
+    good_basis = lll_lattice_reduction(public_basis)
+    
+    print('public_basis:', public_basis)
+    print('good_basis:', good_basis)
+    
+    # Decrypt using the good basis as if it's the private basis
+    return ggh_decrypt(good_basis, public_basis, encrypted_message)
 
 
 
@@ -140,9 +159,28 @@ def run_random_ggh():
 
 
 
+def run_crack_ggh():
+    public_basis = Basis([
+        [-4179163, -1882253, 583183],
+        [-3184353, -1434201, 444361],
+        [-5277320, -2376852, 736426],
+    ])
+    
+    encrypted = Matrix([-79081427, -35617462, 11035473])
+    
+    decrypted = ggh_crack(public_basis, encrypted)
+    
+    original = Matrix([86, -35, -32])
+    
+    print('decrypted:', decrypted)
+    print('original:', original)
+
+
+
 def main():
-    run_example_ggh()
-    run_random_ggh()
+    run_crack_ggh()
+    #run_example_ggh()
+    #run_random_ggh()
 
 
 

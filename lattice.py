@@ -119,6 +119,8 @@ def random_matrix(n, m=None, *, scale=None):
     
     return Matrix([[random.randint(-scale, scale) for c in range(m)] for r in range(n)])
 
+
+
 def random_unimodular_matrix(n, *, scale=None, rand=None):
     """
     Returns a random n by n unimodular matrix. The matrix should be composed of
@@ -190,7 +192,7 @@ def gram_schmidt(basis):
     new_basis = basis.copy()
     for i in range(len(basis)):
         for j in range(i):
-            new_basis[i] -= projection(new_basis[i], basis[j])
+            new_basis[i] -= projection(basis[i], new_basis[j])
     
     return new_basis
 
@@ -246,10 +248,10 @@ def lll_lattice_reduction(basis):
     while k < n:
         ortho_basis = gram_schmidt(basis)
         
-        for j in range(k - 1, -1, -1):
+        for j in reversed(range(0, k)):
             basis[k] = basis[k] - basis[j] * round(mu(k, j))
         
-        if 4 * (ortho_basis[k].norm() / ortho_basis[k - 1].norm()) ** 2 >= 3 - 4 * mu(k, k - 1) ** 2:
+        if ortho_basis[k].norm() ** 2 >= (3 / 4 - mu(k, k - 1) ** 2) * ortho_basis[k - 1].norm() ** 2:
             k = k + 1
         else:
             basis[k], basis[k - 1] = basis[k - 1], basis[k]
@@ -258,4 +260,24 @@ def lll_lattice_reduction(basis):
     return basis
 
 
+
+def main():
+    b = Basis([
+        [19,  2, 32, 46,  3, 33],
+        [15, 42, 11,  0,  3, 24],
+        [43, 15,  0, 24,  4, 16],
+        [20, 44, 44,  0, 18, 15],
+        [ 0, 48, 35, 16, 31, 31],
+        [48, 33, 32,  9,  1, 29]
+    ])
+    
+    print(b)
+    print(b[0])
+    print(b[1])
+    print(lll_lattice_reduction(b))
+
+
+
+if __name__ == '__main__':
+    main()
 

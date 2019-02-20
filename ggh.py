@@ -120,13 +120,13 @@ def run_example_ggh():
         [-97, 19, 19],
         [-36, 30, 86],
         [-184, -64, 78]
-    ])
+    ], row_vectors=True)
     
     public_basis = Basis([
         [-4179163, -1882253, 583183],
         [-3184353, -1434201, 444361],
         [-5277320, -2376852, 736426]
-    ])
+    ], row_vectors=True)
     
     rand = Matrix([-4, -3, 2])
     message = Matrix([86, -35, -32])
@@ -164,13 +164,11 @@ def run_crack_ggh():
         [-4179163, -1882253, 583183],
         [-3184353, -1434201, 444361],
         [-5277320, -2376852, 736426],
-    ])
-    
-    encrypted = Matrix([-79081427, -35617462, 11035473])
-    
-    decrypted = ggh_crack(public_basis, encrypted)
+    ], row_vectors=True)
     
     original = Matrix([86, -35, -32])
+    encrypted = Matrix([-79081427, -35617462, 11035473])
+    decrypted = ggh_crack(public_basis, encrypted)
     
     print('decrypted:', decrypted)
     print('original:', original)

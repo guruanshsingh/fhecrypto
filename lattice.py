@@ -20,51 +20,53 @@ class Basis:
     Represents the basis of a vector-space or lattice.
     """
     
-    def __init__(self, arg):
-        if isinstance(arg, Basis):
-            self.vectors = [vec.copy() for vec in arg]
+    def __init__(self, arg, *, row_vectors=False):
+        try:
+            if isinstance(arg, Basis):
+                self.matrix = arg.matrix.copy()
+            elif isinstance(arg, list) and isinstance(arg[0], Matrix):
+                self.matrix = Matrix.hstack(*arg)
+            elif isinstance(arg, tuple) and isinstance(arg[0], Matrix):
+                self.matrix = Matrix.hstack(*arg)
+            else:
+                self.matrix = Matrix(arg)
             
-        elif isinstance(arg, sympy.MatrixBase):
-            self.vectors = [arg[:, i] for i in range(arg.cols)]
+            if row_vectors:
+                self.matrix = self.matrix.T
             
-        elif isinstance(arg, list):
-            self.vectors = [Matrix(x) for x in arg]
-            
-        else:
-            try:
-                self.vectors = [Matrix(x) for x in arg]
-            except TypeError:
-                raise TypeError('Cannot construct a Basis from an object of type {}'.format(type(arg)))
+        except TypeError:
+            raise TypeError('Cannot construct a Basis from an object of type {}'.format(type(arg)))
     
     def __str__(self):
-        return self.mat().__str__()
+        return self.matrix.__str__()
     
     def __repr__(self):
-        return 'Basis({})'.format(self.vectors.__str__())
+        return 'Basis({})'.format(self.matrix.__str__())
     
     def __len__(self):
-        return self.vectors.__len__()
+        return self.matrix.cols
     
     def __getitem__(self, i):
-        return self.vectors.__getitem__(i)
+        return self.matrix.__getitem__((slice(None), i))
     
     def __setitem__(self, i, val):
-        return self.vectors.__setitem__(i, val)
+        return self.matrix.__setitem__((slice(None), i), val)
     
     def __iter__(self):
-        return self.vectors.__iter__()
+        for i in range(self.__len__()):
+            yield self.__getitem__(i)
     
     def copy(self):
-        return Basis([vec.copy() for vec in self.vectors])
+        return Basis(self.matrix.copy())
     
     def vol(self):
-        return abs(self.mat().det())
+        return abs(self.matrix.det())
     
     def mat(self):
-        return Matrix.hstack(*self.vectors)
+        return self.matrix
     
     def inv(self):
-        return self.mat().inv()
+        return self.matrix.inv()
 
 
 
@@ -269,12 +271,10 @@ def main():
         [20, 44, 44,  0, 18, 15],
         [ 0, 48, 35, 16, 31, 31],
         [48, 33, 32,  9,  1, 29]
-    ])
+    ], row_vectors=True)
     
-    print(b)
-    print(b[0])
-    print(b[1])
-    print(lll_lattice_reduction(b))
+    print('Original basis:', b)
+    print('LLL basis:', lll_lattice_reduction(b))
 
 
 

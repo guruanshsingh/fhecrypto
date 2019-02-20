@@ -229,7 +229,7 @@ def gaussian_lattice_reduction(basis):
 
 
 
-def lll_lattice_reduction(basis):
+def lll_lattice_reduction(basis, lovasz_const=None):
     """
     Returns a list of "small" vectors which span the same lattice as the
     original basis.
@@ -238,7 +238,11 @@ def lll_lattice_reduction(basis):
     
     Parameters:
         basis - a list of linearly independent vectors
+        lovasz_const - (default: 3/4) the constant used by the lovasz condition
     """
+    
+    if lovasz_const is None:
+        lovasz_const = 3/4
     
     n = len(basis)
     basis = basis.copy()
@@ -253,7 +257,7 @@ def lll_lattice_reduction(basis):
         for j in reversed(range(0, k)):
             basis[k] = basis[k] - basis[j] * round(mu(k, j))
         
-        if ortho_basis[k].norm() ** 2 >= (3 / 4 - mu(k, k - 1) ** 2) * ortho_basis[k - 1].norm() ** 2:
+        if ortho_basis[k].norm() ** 2 >= (lovasz_const - mu(k, k - 1) ** 2) * ortho_basis[k - 1].norm() ** 2:
             k = k + 1
         else:
             basis[k], basis[k - 1] = basis[k - 1], basis[k]

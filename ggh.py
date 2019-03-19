@@ -3,6 +3,7 @@
 
 import sympy
 from lattice import *
+import matplotlib.pyplot as plt
 
 
 
@@ -21,13 +22,13 @@ def gen_good_basis(n, scale, *, ratio=None):
     
     basis = Basis(random_matrix(n, scale=scale))
     while hadamard_ratio(basis) < ratio:
-        basis = Basis(random_matrix(n, scale=scale))
+        basis = gram_schmidt(Basis(random_matrix(n, scale=scale))).map(round)
     
     return basis
 
 
 
-def gen_bad_basis(basis, *, ratio=None, scale=None):
+def gen_bad_basis(basis, *, ratio=None, min_ratio=None, scale=None):
     """
     Generate a "bad" basis with a small Hdamard ratio and large entries that
     spans the same lattice as a "good" input lattice.
@@ -41,13 +42,16 @@ def gen_bad_basis(basis, *, ratio=None, scale=None):
     if ratio is None:
         ratio = 0.05
     
+    if min_ratio is None:
+        min_ratio = 0.00
+    
     if scale is None:
-        scale = 1000
+        scale = 100
     
     n = len(basis)
     
     new_basis = Basis(basis.mat() * random_unimodular_matrix(n, scale=scale))
-    while hadamard_ratio(basis) < ratio:
+    while hadamard_ratio(new_basis) > ratio or hadamard_ratio(new_basis) < min_ratio:
         new_basis = Basis(basis.mat() * random_unimodular_matrix(n, scale=scale))
     
     return new_basis
@@ -172,8 +176,128 @@ def run_crack_ggh():
 
 
 
+def smooth_data(x, y, factor=5):
+    n = len(x)
+    m = n
+    d = (x[-1] - x[0]) / (m - 1)
+    
+    def w(i, j):
+        return max(0, factor * d - abs(xp[i] - x[j]))
+    
+    xp = [0 for i in range(m)]
+    yp = [0 for i in range(m)]
+    
+    for i in range(m):
+        xp[i] = x[i]
+        yp[i] = sum(y[j] * w(i, j) for j in range(n)) / sum(w(i, j) for j in range(n))
+    
+    return xp, yp
+
+
+
+def test_ggh_decryption():
+    """
+    Test how often GGH decryption fails for different Hadamard ratios of the
+    private basis. How does this vary with n?
+    """
+    
+    scale = 100
+    trials = 128
+    
+    data = []
+    for n in range(4, 8):
+        
+        points = []
+        for i in range(trials):
+            private = gen_good_basis(n, scale, ratio=0.5)
+            public = gen_bad_basis(private, ratio=0.05)
+            ratio = hadamard_ratio(private)
+            
+            msg = random_matrix(n, 1, scale=scale)
+            rec = ggh_decrypt(private, public, ggh_encrypt(public, msg, delta=10))
+            
+            if rec == msg:
+                points.append((ratio, 1))
+            else:
+                points.append((ratio, 0))
+        
+        points.sort(key=lambda x: x[0])
+        print(i, points)
+        
+        ratios = [x[0] for x in points]
+        success = [x[1] for x in points]
+        data.append((n, ratios, success))
+    
+        #for n, ratios, success in data:
+        plt.clf()
+        fig = plt.figure()
+        
+        plt.title('Decrypting GGH Success Rate (n={})'.format(n))
+        plt.xlabel('Hadamard ratio of the private basis')
+        plt.ylabel('Rate of success (decrypting an encrypted message)')
+        plt.xlim(0.5, 1.0)
+        plt.ylim(-0.2, 1.2)
+        plt.plot(*smooth_data(ratios, success, 16))
+        
+        fig.savefig('../decrypting_success_{}.png'.format(n), dpi=fig.dpi)
+    
+    return data
+
+
+
+def test_ggh_cracking():
+    """
+    Test how often GGH cracking fails for different Hadamard ratios of the
+    public basis. How does this vary with n?
+    """
+    
+    scale = 100
+    trials = 128
+    
+    data = []
+    for n in range(4, 8):
+        
+        points = []
+        for i in range(trials):
+            private = gen_good_basis(n, scale, ratio=0.8)
+            public = gen_bad_basis(private, ratio=0.5)
+            ratio = hadamard_ratio(public)
+            
+            msg = random_matrix(n, 1, scale=scale)
+            rec = ggh_crack(public, ggh_encrypt(public, msg, delta=10))
+            
+            if rec == msg:
+                points.append((ratio, 1))
+            else:
+                points.append((ratio, 0))
+        
+        points.sort(key=lambda x: x[0])
+        print(i, points)
+        
+        ratios = [x[0] for x in points]
+        success = [x[1] for x in points]
+        data.append((n, ratios, success))
+    
+        #for n, ratios, success in data:
+        plt.clf()
+        fig = plt.figure()
+        
+        plt.title('Cracking GGH Success Rate (n={})'.format(n))
+        plt.xlabel('Hadamard ratio of the public basis')
+        plt.ylabel('Rate of success (cracking an encrypted message)')
+        plt.xlim(0.0, 0.1)
+        plt.ylim(-0.2, 1.2)
+        plt.plot(*smooth_data(ratios, success, 16))
+        
+        fig.savefig('../cracking_success_{}.png'.format(n), dpi=fig.dpi)
+    
+    return data
+
+
+
 def main():
-    run_crack_ggh()
+    print(test_ggh_decryption())
+    #run_crack_ggh()
     #run_example_ggh()
     #run_random_ggh()
 
@@ -181,4 +305,4 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
+

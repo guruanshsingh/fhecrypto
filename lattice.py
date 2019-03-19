@@ -67,6 +67,9 @@ class Basis:
     
     def inv(self):
         return self.matrix.inv()
+    
+    def map(self, f):
+        return Basis(self.matrix.applyfunc(f))
 
 
 
